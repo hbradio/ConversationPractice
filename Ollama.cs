@@ -2,6 +2,11 @@ using System.Net.Http.Json;
 
 class Ollama
 {
+    public record ChatResponse(
+        string model,
+        Message message
+    );
+
     private static readonly HttpClient http = new()
     {
         BaseAddress = new Uri("http://localhost:11434")
