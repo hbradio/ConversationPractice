@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using Spectre.Console;
+﻿using Spectre.Console;
 
 public record ChatRequest(
     string model,
@@ -20,18 +19,13 @@ class Program
 {
 
     private static readonly string MODEL = "gpt-oss:20b";
-    private static readonly HttpClient http = new()
-    {
-        BaseAddress = new Uri("http://localhost:11434")
-    };
-
     static async Task Main()
     {
         AnsiConsole.MarkupLine($"[green]Beginning chat with[/] [blue italic]{MODEL}[/]");
 
         var messages = new List<Message>
         {
-            new("system", "You are a helpful assistant."),
+            new("system", "You are a person in a train station, needing to know which train goes downtown. You speak Mexican Spanish and no English."),
         };
 
         while (true)
@@ -55,22 +49,18 @@ class Program
                 .SpinnerStyle(Style.Parse("green"))
                 .StartAsync("...", async ctx =>
             {
-                return await PostChat(req);
+                return await Ollama.PostChat(req);
             });
 
-            AnsiConsole.MarkupLine($"\n> [grey]{response.message.content}[/]\n");
+            var reply = response.message.content;
 
-            messages.Add(new Message("assistant", response.message.content));
+            Tts.SpeakText(reply, 200);
+            AnsiConsole.MarkupLine($"\n> [grey]{reply}[/]\n");
+            Tts.SpeakText(reply, 150);
+
+            messages.Add(new Message("assistant", reply));
         }
     }
 
-    static async Task<ChatResponse> PostChat(ChatRequest req)
-    {
-        using var result = await http.PostAsJsonAsync("/api/chat", req);
-        result.EnsureSuccessStatusCode();
-
-        var response = await result.Content.ReadFromJsonAsync<ChatResponse>() ?? throw new Exception("Failure");
-        return response;
-    }
 
 }
