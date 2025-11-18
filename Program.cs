@@ -7,25 +7,55 @@ class Program
     private static readonly string MODEL = "gpt-oss:20b";
     static async Task Main()
     {
-        AnsiConsole.MarkupLine($"[green]Beginning chat with[/] [blue italic]{MODEL}[/]");
-
-        var facilitator = new Agent(
+        var scenarioCreator = new Agent(
             "You are a skilled Spanish teacher who can answer questions in English.",
             MODEL);
+
+        var scenario = await AnsiConsole.Status()
+            .SpinnerStyle(Style.Parse("blue"))
+            .StartAsync("...", async ctx =>
+        {
+            return await scenarioCreator.Chat(@"
+            Come up with a scenario in which two strangers meet in public.
+            One is an adult male, and the other could be anyone.
+            In your reply, give instructions for roleplaying the second person.
+            Keep it to only a few sentences.
+            Don't use much descriptive language; stay focused on the situation.
+            Please describe the scenario only; you don't need to tell them to be calm or how to speak.
+            Do not include any starting dialogue.");
+        });
+        AnsiConsole.Write(new Panel(
+            new Markup($"[grey]{scenario}[/]")
+            ).Header("[blue]Teacher: Hi! I gave your conversation partner this scenario.[/]")
+            );
+
+        AnsiConsole.Write(new Panel(
+            new Markup("[grey]Begin with a ? to ask me a question. Otherwise, enjoy chatting with your partner! [/]")
+            ).Header("[blue]Teacher: Tip[/]"));
+        
         var conversationPartner = new Agent(
-            @"Please roleplay that you are a person in a train station, needing to know which train goes downtown.
-            Please continue the conversation after I tell you where the train is.
+            $@"Please roleplay the following situation: \n\n ```{scenario}``` \n\n
+            Give only one response.
+            Please keep your replies brief (one or two sentences) and conversational.
+            Do not include emojis.
+            Do not make lists.
             You are not an assistant.
             You speak Mexican Spanish and no English.",
             MODEL);
 
+        var facilitator = new Agent(
+            "You are a skilled Spanish teacher who can answer questions in English.",
+            MODEL);
+
         var reply = await AnsiConsole.Status()
-            .SpinnerStyle(Style.Parse("grey"))
+            .SpinnerStyle(Style.Parse("blue"))
             .StartAsync("...", async ctx =>
         {
             return await conversationPartner.Chat();
         });
-        AnsiConsole.MarkupLine($"\n> [grey]{reply}[/]\n");
+        Tts.SpeakText(reply, 200);
+        AnsiConsole.MarkupLine($"\n> [palegreen3_1]{reply}[/]\n");
+        Tts.SpeakText(reply, 150);
 
         while (true)
         {
@@ -39,7 +69,8 @@ class Program
             if (userInput.StartsWith("?"))
             {
                 HandleHelpRequest(userInput, facilitator, conversationPartner);
-            } else
+            }
+            else
             {
                 HandleConversation(userInput, facilitator, conversationPartner);
             }
@@ -60,7 +91,7 @@ class Program
             return await helperAgent.Chat(prompt);
         });
 
-        AnsiConsole.MarkupLine($"\n> [blue]{reply}[/]\n");
+        AnsiConsole.Write(new Panel(new Markup($"[grey]{reply}[/]")).Header("[blue]Teacher: Great question![/]"));
     }
 
     async static void HandleConversation(string msg, Agent helperAgent, Agent conversationPartner)
@@ -80,20 +111,20 @@ class Program
         });
         if (!helperReply.Contains("NO ADVICE"))
         {
-            AnsiConsole.MarkupLine($"\n> [blue]{helperReply}[/]\n");
+            AnsiConsole.Write(new Panel(new Markup($"[grey]{helperReply}[/]")).Header("[blue]Teacher: Nice! Here's a tip.[/]"));
             return;
         }
 
         var reply = await AnsiConsole.Status()
-            .SpinnerStyle(Style.Parse("grey"))
+            .SpinnerStyle(Style.Parse("palegreen3_1"))
             .StartAsync("...", async ctx =>
         {
             return await conversationPartner.Chat(msg);
         });
 
-        // Tts.SpeakText(reply, 200);
-        AnsiConsole.MarkupLine($"\n> [grey]{reply}[/]\n");
-        // Tts.SpeakText(reply, 150);
+        Tts.SpeakText(reply, 200);
+        AnsiConsole.MarkupLine($"\n> [palegreen3_1]{reply}[/]\n");
+        Tts.SpeakText(reply, 150);
 
     }
 }
