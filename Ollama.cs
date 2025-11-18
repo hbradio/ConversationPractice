@@ -6,6 +6,12 @@ class Ollama
         string model,
         Message message
     );
+    public record ChatRequest(
+        string model,
+        List<Message> messages,
+        bool stream = false
+    );
+
 
     private static readonly HttpClient http = new()
     {
