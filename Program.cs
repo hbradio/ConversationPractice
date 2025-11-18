@@ -41,7 +41,7 @@ class Program
                 HandleHelpRequest(userInput, facilitator, conversationPartner);
             } else
             {
-                HandleConversation(userInput, conversationPartner);
+                HandleConversation(userInput, facilitator, conversationPartner);
             }
         }
     }
@@ -60,19 +60,35 @@ class Program
             return await helperAgent.Chat(prompt);
         });
 
-        // Tts.SpeakText(reply, 200);
         AnsiConsole.MarkupLine($"\n> [blue]{reply}[/]\n");
-        // Tts.SpeakText(reply, 150);
-
     }
 
-    async static void HandleConversation(string msg, Agent agent)
+    async static void HandleConversation(string msg, Agent helperAgent, Agent conversationPartner)
     {
+
+        var prompt = $@"A student learning Spanish is having a conversation with a
+        partner and just said this: ```{msg}```. 
+        Please give advice to correct the grammar of their reply.
+        Please give the advice in English and the suggested correction in Spanish.
+        If their reply is pretty good as it is, please response simply `NO ADVICE`.
+        For context, the full conversation is this: ```{conversationPartner.GetAllMessagesBlob}```.";
+        var helperReply = await AnsiConsole.Status()
+            .SpinnerStyle(Style.Parse("blue"))
+            .StartAsync("...", async ctx =>
+        {
+            return await helperAgent.Chat(prompt);
+        });
+        if (!helperReply.Contains("NO ADVICE"))
+        {
+            AnsiConsole.MarkupLine($"\n> [blue]{helperReply}[/]\n");
+            return;
+        }
+
         var reply = await AnsiConsole.Status()
             .SpinnerStyle(Style.Parse("grey"))
             .StartAsync("...", async ctx =>
         {
-            return await agent.Chat(msg);
+            return await conversationPartner.Chat(msg);
         });
 
         // Tts.SpeakText(reply, 200);
