@@ -13,6 +13,7 @@ class Program
             new Markup($@"[grey]Do you have a lesson you'd like to practice? If so, give me a path to the pdf. Otherwise, just hit enter. [/]")
             ).Header("[blue]Teacher: Hello and welcome![/]")
             );
+        Console.Write("> ");
         string? lessonPath = Console.ReadLine();
 
         var lessonText = "";
@@ -22,18 +23,40 @@ class Program
         }
 
         var scenarioCreator = new Agent("", MODEL);
+        
+        var lessonSummary = "";
+        if (!string.IsNullOrEmpty(lessonText)) {
+            lessonSummary = await AnsiConsole.Status()
+                .SpinnerStyle(Style.Parse("blue"))
+                .StartAsync("...", async ctx =>
+            {
+                return await scenarioCreator.Chat(@$"Below is a lesson from a Spanish textbook.
+                Give me a very brief list of the vocabulary, grammar, and/or tenses introduced.
+                {lessonText}");
+            });
+        }
+
+        var safeLessonSummary = Markup.Escape(lessonSummary);
+        AnsiConsole.Write(new Panel(
+            new Markup($@"[grey]{safeLessonSummary} [/]")
+            ).Header("[blue]Teacher: Great! Here's what we'll focus on.[/]")
+        );
 
         var scenario = await AnsiConsole.Status()
             .SpinnerStyle(Style.Parse("blue"))
             .StartAsync("...", async ctx =>
         {
-            return await scenarioCreator.Chat(@"Come up with a scenario in which two strangers meet in public.
+            return await scenarioCreator.Chat($@"Come up with a scenario in which two strangers meet in public.
             As your reply, give instructions for roleplaying one of the people, filling in this template: “You are <description of person>, who is <description of where she is and what is happening>.”
-            Include *only* this completed template as your response.");
+            Include *only* this completed template as your response.
+            Complete the template only in English.
+            Below is a summary of a language lesson. Try to choose a scenario that could use vocabulary and grammar covered in it.
+            {lessonSummary}");
+
         });
         AnsiConsole.Write(new Panel(
             new Markup($"[grey]{scenario}[/]")
-            ).Header("[blue]Teacher: Hi! I gave your conversation partner this scenario.[/]")
+            ).Header("[blue]Teacher: I gave your conversation partner this scenario.[/]")
             );
 
         AnsiConsole.Write(new Panel(
@@ -48,14 +71,14 @@ class Program
             You are not an assistant.
             You speak Mexican Spanish and no English.";
 
-        if (!string.IsNullOrWhiteSpace(lessonText)) {
-           conversationPartnerPrompt += $" Try to use vocabulary and tenses from this lesson: ```{lessonText}```";
+        if (!string.IsNullOrWhiteSpace(lessonSummary)) {
+           conversationPartnerPrompt += $" Try to use vocabulary and tenses from this lesson: ```{lessonSummary}```";
         }
         var conversationPartner = new Agent(conversationPartnerPrompt, MODEL);
 
         var faciliatorPrompt = $@"You are a skilled Spanish teacher who can answer questions in English.";
-        if (!string.IsNullOrWhiteSpace(lessonText)) {
-            faciliatorPrompt += $" The student is studying this lesson: ```{lessonText}```";
+        if (!string.IsNullOrWhiteSpace(lessonSummary)) {
+            faciliatorPrompt += $" The student is studying this lesson: ```{lessonSummary}```";
         }
         var facilitator = new Agent(faciliatorPrompt, MODEL);
 
