@@ -7,9 +7,9 @@ class Program
     private static readonly string MODEL = "gpt-oss:20b";
     static async Task Main()
     {
-        var scenarioCreator = new Agent(
-            "You are a skilled Spanish teacher who can answer questions in English.",
-            MODEL);
+        var lessonText = Pdf.ReadPdf(@"Texts/chapter1.pdf");
+
+        var scenarioCreator = new Agent("", MODEL);
 
         var scenario = await AnsiConsole.Status()
             .SpinnerStyle(Style.Parse("blue"))
@@ -32,20 +32,25 @@ class Program
         AnsiConsole.Write(new Panel(
             new Markup("[grey]Begin with a ? to ask me a question. Otherwise, enjoy chatting with your partner! [/]")
             ).Header("[blue]Teacher: Tip[/]"));
-        
-        var conversationPartner = new Agent(
-            $@"Please roleplay the following situation: \n\n ```{scenario}``` \n\n
+
+        var conversationPartnerPrompt = $@"Please roleplay the following situation: \n\n ```{scenario}``` \n\n
             Give only one response.
             Please keep your replies brief (one or two sentences) and conversational.
             Do not include emojis.
             Do not make lists.
             You are not an assistant.
-            You speak Mexican Spanish and no English.",
-            MODEL);
+            You speak Mexican Spanish and no English.";
 
-        var facilitator = new Agent(
-            "You are a skilled Spanish teacher who can answer questions in English.",
-            MODEL);
+        if (!string.IsNullOrWhiteSpace(lessonText)) {
+           conversationPartnerPrompt += $" Try to use vocabulary and tenses from this lesson: ```{lessonText}```";
+        }
+        var conversationPartner = new Agent(conversationPartnerPrompt, MODEL);
+
+        var faciliatorPrompt = $@"You are a skilled Spanish teacher who can answer questions in English.";
+        if (!string.IsNullOrWhiteSpace(lessonText)) {
+            faciliatorPrompt += $" The student is studying this lesson: ```{lessonText}```";
+        }
+        var facilitator = new Agent(faciliatorPrompt, MODEL);
 
         var reply = await AnsiConsole.Status()
             .SpinnerStyle(Style.Parse("blue"))

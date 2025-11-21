@@ -6,10 +6,17 @@ class Agent
 
     public Agent(string roleDescription, string model)
     {
-        messages = new List<Message>
+        if (string.IsNullOrEmpty(roleDescription))
         {
-            new("system", roleDescription),
-        };
+            messages = [];
+        }
+        else
+        {
+            messages =
+            [
+                new("system", roleDescription),
+            ];
+        }
         this.model = model;
     }
 
@@ -17,7 +24,7 @@ class Agent
     {
         return await Chat("");
     }
-    
+
     public async Task<string> Chat(string msg)
     {
         if (!string.IsNullOrEmpty(msg))
@@ -39,7 +46,7 @@ class Agent
     {
         return string.Join(", ", messages.Select(m => $"{m.role}: {m.content}\n"));
     }
-    
+
     public string GetLatestMessage()
     {
         return messages.Last().content;
