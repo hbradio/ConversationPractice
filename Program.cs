@@ -7,7 +7,17 @@ class Program
     private static readonly string MODEL = "gpt-oss:20b";
     static async Task Main()
     {
-        var lessonText = Pdf.ReadPdf(@"Texts/chapter1.pdf");
+        AnsiConsole.Write(new Panel(
+            new Markup($@"[grey]Do you have a lesson you'd like to practice? If so, give me a path to the pdf. Otherwise, just hit enter. [/]")
+            ).Header("[blue]Teacher: Hello and welcome![/]")
+            );
+        string? lessonPath = Console.ReadLine();
+
+        var lessonText = "";
+        if (!string.IsNullOrEmpty(lessonPath))
+        {
+           lessonText = Pdf.ReadPdf(lessonPath);
+        }
 
         var scenarioCreator = new Agent("", MODEL);
 
