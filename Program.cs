@@ -5,6 +5,8 @@ public record Message(string role, string content);
 class Program
 {
     private static readonly string MODEL = "gpt-oss:20b";
+    private static readonly int NORMAL_WORDS_PER_SECOND = 175;
+    private static readonly int SLOW_WORDS_PER_SECOND = 150;
     static async Task Main()
     {
         AnsiConsole.Write(new Panel(
@@ -25,14 +27,9 @@ class Program
             .SpinnerStyle(Style.Parse("blue"))
             .StartAsync("...", async ctx =>
         {
-            return await scenarioCreator.Chat(@"
-            Come up with a scenario in which two strangers meet in public.
-            One is an adult male, and the other could be anyone.
-            In your reply, give instructions for roleplaying the second person.
-            Keep it to only a few sentences.
-            Don't use much descriptive language; stay focused on the situation.
-            Please describe the scenario only; you don't need to tell them to be calm or how to speak.
-            Do not include any starting dialogue.");
+            return await scenarioCreator.Chat(@"Come up with a scenario in which two strangers meet in public.
+            As your reply, give instructions for roleplaying one of the people, filling in this template: “You are <description of person>, who is <description of where she is and what is happening>.”
+            Include *only* this completed template as your response.");
         });
         AnsiConsole.Write(new Panel(
             new Markup($"[grey]{scenario}[/]")
@@ -68,9 +65,9 @@ class Program
         {
             return await conversationPartner.Chat();
         });
-        Tts.SpeakText(reply, 200);
+        Tts.SpeakText(reply, NORMAL_WORDS_PER_SECOND);
         AnsiConsole.MarkupLine($"\n> [palegreen3_1]{reply}[/]\n");
-        Tts.SpeakText(reply, 150);
+        Tts.SpeakText(reply, SLOW_WORDS_PER_SECOND);
 
         while (true)
         {
@@ -137,9 +134,9 @@ class Program
             return await conversationPartner.Chat(msg);
         });
 
-        Tts.SpeakText(reply, 200);
+        Tts.SpeakText(reply, NORMAL_WORDS_PER_SECOND);
         AnsiConsole.MarkupLine($"\n> [palegreen3_1]{reply}[/]\n");
-        Tts.SpeakText(reply, 150);
+        Tts.SpeakText(reply, SLOW_WORDS_PER_SECOND);
 
     }
 }
