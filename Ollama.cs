@@ -12,15 +12,27 @@ class Ollama
         bool stream = false
     );
 
+    private readonly HttpClient _http;
+    private readonly string _bearerToken;
 
-    private static readonly HttpClient http = new()
+    public Ollama(string baseUrl, string bearerToken)
     {
-        BaseAddress = new Uri("http://localhost:11434")
-    };
+        _http = new HttpClient
+        {
+            BaseAddress = new Uri(baseUrl)
+        };
+        _bearerToken = bearerToken;
+    }
 
-    public static async Task<ChatResponse> PostChat(ChatRequest req)
+    public async Task<ChatResponse> PostChat(ChatRequest req)
     {
-        using var result = await http.PostAsJsonAsync("/api/chat", req);
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat")
+        {
+            Content = JsonContent.Create(req)
+        };
+        request.Headers.Add("Authorization", $"Bearer {_bearerToken}");
+        
+        using var result = await _http.SendAsync(request);
         result.EnsureSuccessStatusCode();
 
         var response = await result.Content.ReadFromJsonAsync<ChatResponse>() ?? throw new Exception("Failure");

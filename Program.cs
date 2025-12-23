@@ -1,4 +1,5 @@
 ﻿using Spectre.Console;
+using Microsoft.Extensions.Configuration;
 
 public record Message(string role, string content);
 
@@ -9,6 +10,16 @@ class Program
     private static readonly int SLOW_WORDS_PER_SECOND = 150;
     static async Task Main()
     {
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+        var ollamaBaseUrl = configuration["Ollama:BaseUrl"] ?? throw new Exception("Ollama:BaseUrl not configured");
+        var ollamaBearerToken = configuration["Ollama:BearerToken"] ?? throw new Exception("Ollama:BearerToken not configured");
+        
+        var ollama = new Ollama(ollamaBaseUrl, ollamaBearerToken);
+
         AnsiConsole.Write(new Panel(
             new Markup($@"[grey]Do you have a lesson you'd like to practice? If so, give me a path to the pdf. Otherwise, just hit enter. [/]")
             ).Header("[blue]Teacher: Hello and welcome![/]")
@@ -22,7 +33,7 @@ class Program
            lessonText = Pdf.ReadPdf(lessonPath);
         }
 
-        var scenarioCreator = new Agent("", MODEL);
+        var scenarioCreator = new Agent("", MODEL, ollama);
         
         var lessonSummary = "";
         if (!string.IsNullOrEmpty(lessonText)) {
@@ -74,13 +85,13 @@ class Program
         if (!string.IsNullOrWhiteSpace(lessonSummary)) {
            conversationPartnerPrompt += $" Try to use vocabulary and tenses from this lesson: ```{lessonSummary}```";
         }
-        var conversationPartner = new Agent(conversationPartnerPrompt, MODEL);
+        var conversationPartner = new Agent(conversationPartnerPrompt, MODEL, ollama);
 
         var faciliatorPrompt = $@"You are a skilled Spanish teacher who can answer questions in English.";
         if (!string.IsNullOrWhiteSpace(lessonSummary)) {
             faciliatorPrompt += $" The student is studying this lesson: ```{lessonSummary}```";
         }
-        var facilitator = new Agent(faciliatorPrompt, MODEL);
+        var facilitator = new Agent(faciliatorPrompt, MODEL, ollama);
 
         var reply = await AnsiConsole.Status()
             .SpinnerStyle(Style.Parse("blue"))

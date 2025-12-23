@@ -3,8 +3,9 @@ class Agent
 {
     private List<Message> messages;
     private string model;
+    private Ollama ollama;
 
-    public Agent(string roleDescription, string model)
+    public Agent(string roleDescription, string model, Ollama ollama)
     {
         if (string.IsNullOrEmpty(roleDescription))
         {
@@ -18,6 +19,7 @@ class Agent
             ];
         }
         this.model = model;
+        this.ollama = ollama;
     }
 
     public async Task<string> Chat()
@@ -36,7 +38,7 @@ class Agent
             messages,
             stream: false
         );
-        var response = await Ollama.PostChat(req);
+        var response = await ollama.PostChat(req);
         var reply = response.message.content;
         messages.Add(new Message("assistant", reply));
         return reply;

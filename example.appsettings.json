@@ -1,0 +1,6 @@
+{
+  "Ollama": {
+    "BaseUrl": "http://localhost:11434",
+    "BearerToken": "leave-blank-if-not-needed"
+  }
+}
